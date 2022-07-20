@@ -505,8 +505,10 @@ private:
                 auto end_remove = remove_if(all_path.begin(), all_path.end(),
                                             [depth_](vector<int> &a_path) { return a_path.size() > depth_; });
                 all_path.erase(end_remove, all_path.end());
+                return depth_;
+            } else {
+                return --depth_;
             }
-            return --depth_;
         }
     }
 

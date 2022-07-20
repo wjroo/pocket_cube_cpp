@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# My configuration
+.idea/
+cmake-build-debug/*
+cmake-build-release/*
+!cmake-build-release/*.exe

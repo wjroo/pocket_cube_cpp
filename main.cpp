@@ -90,24 +90,28 @@ public:
         int choose;
         while (true) {
             cout << "\n【选项目录】\n"
-                 << "\t0：退出。\n"
-                 << "\t1：复原至标准状态。\n"
-                 << "\t2：复原至指定状态。\n"
-                 << "\t3：随机打乱。\n"
-                 << "\t4：在线输入旋转动作、输出转动状态。\n"
-                 << "\t5：切换角块是否精确匹配。（当前：" << boolalpha << exact_match << "）" << endl;
+                 << "\t 0) 退出。\n"
+                 << "\t 1) 复原至标准状态。\n"
+                 << "\t 2) 复原至指定状态。\n"
+                 << "\t 3) 随机打乱。\n"
+                 << "\t 4) 在线输入旋转动作、输出转动状态。\n"
+                 << "\t 5) 切换角块是否精确匹配。（当前为 " << boolalpha << exact_match << " ）\n"
+                 << "\t 6) 输出初态。\n"
+                 << "\t 7) 输出终态。\n"
+                 << "\t 8) 交换初态与终态。\n"
+                 << "\t 9) 设置映射表深度。（2~9，当前为 " << map_depth << " ）\n" << endl;
 
             do {
                 cout << "输入你的选择：" << endl;
                 cin >> choose;
-            } while (choose < 0 || choose > 5);
+            } while (choose < 0 || choose > 9);
 
             int input_num = 0, depth = 0;
             switch (choose) {
                 case 0:
                     return;
                 case 1:
-                    arr_state[14] = zero_state;
+                    arr_state[15] = zero_state;
                     if (!get_state(0, "【输入初态】"))break;
                     generate_map();
                     depth = search_all_path();
@@ -115,7 +119,7 @@ public:
                     print_path();
                     break;
                 case 2:
-                    if (!get_state(14, "【输入终态】"))break;
+                    if (!get_state(15, "【输入终态】"))break;
                     if (!get_state(0, "【输入初态】"))break;
                     generate_map();
                     depth = search_all_path();
@@ -125,23 +129,24 @@ public:
                 case 3:
                     if (!get_state(0, "【输入初态】"))break;
                     do {
-                        cout << "请输入随机打乱步数（0~1000）：" << endl;
+                        cout << "请输入随机打乱步数（1~1000）：" << endl;
                         cin >> input_num;
-                    } while (input_num < 0 || input_num > 1000);
+                    } while (input_num < 1 || input_num > 1000);
                     arr_state[15] = arr_state[0];
                     for (int i = 0, direction = 0; i < input_num; ++i) {
                         direction = random_gen(1, 6);
                         rotate(direction, 15);
                     }
-                    generate_map(15);
-                    depth = search_all_path(15);
+                    generate_map();
+                    depth = search_all_path();
                     cout << "最少步骤数为 " << depth << "\n";
                     print_path(1);
+                    print_state(15);
                     break;
                 case 4:
                     if (!get_state(0, "【输入初态】"))break;
                     arr_state[1] = arr_state[0];
-                    for (string a_line; cout << "输入旋转编号（1：右顺 2：右逆 3：上顺 4：上逆 5：前顺 6：前逆），无效编号退出" << endl,
+                    for (string a_line; cout << "输入旋转编号 1) 右顺 2) 右逆 3) 上顺 4) 上逆 5) 前顺 6) 前逆，无效编号退出" << endl,
                             getline(cin, a_line);) {
                         bool exit = false;
                         istringstream line_stream(a_line);
@@ -162,6 +167,23 @@ public:
                 case 5:
                     exact_match = !exact_match;
                     break;
+                case 6:
+                    print_state(0);
+                    break;
+                case 7:
+                    print_state(15);
+                    break;
+                case 8:
+                    arr_state[1] = arr_state[0];
+                    arr_state[0] = arr_state[15];
+                    arr_state[15] = arr_state[1];
+                    break;
+                case 9:
+                    do {
+                        cout << "输入映射表深度。（2~9）" << endl;
+                        cin >> map_depth;
+                    } while (map_depth < 2 || map_depth > 9);
+                    break;
 
                 default:
                     break;
@@ -169,7 +191,10 @@ public:
         }
     }
 
-    PocketCube() {
+    PocketCube() : PocketCube(6) {
+    }
+
+    explicit PocketCube(int map_depth) : map_depth(map_depth) {
         zero_state[0] = {0, 1};
         zero_state[1] = {1, 1};
         zero_state[2] = {2, 1};
@@ -179,11 +204,20 @@ public:
         zero_state[6] = {6, 1};
     }
 
+    static ostream &checkout_false(ostream &os, const vector<bool> &flag) {
+        for (size_t i = 0; i != flag.size(); ++i) {
+            if (!flag[i]) {
+                os << i << " ";
+            }
+        }
+        return os;
+    }
+
     bool get_state(int depth, const char *prompt) {
         cout << "\n" << prompt << "\n"
-             << "\t1：保持状态。\n"
-             << "\t2：还原状态。\n"
-             << "\t3：输入状态。" << endl;
+             << "\t1) 保持状态。\n"
+             << "\t2) 还原状态。\n"
+             << "\t3) 输入状态。" << endl;
 
         int choose = 0;
         do {
@@ -199,8 +233,8 @@ public:
                 return true;
             case 3:
                 cout << "\n【假设前提】\n\t面朝颜色：蓝色\n\t左后下方不动角块：左为橙色，后为绿色，下为白色\n"
-                     << "\t角块编号： 0：红白蓝 1：红白绿 2：橙白蓝 3：红黄蓝 4：红黄绿 5：橙黄绿 6：橙黄蓝\n"
-                     << "\t红橙色块朝向编号： 0：前后 1：左右 2：上下\n" << endl;
+                     << "\t角块编号： 0) 红白蓝 1) 红白绿 2) 橙白蓝 3) 红黄蓝 4) 红黄绿 5) 橙黄绿 6) 橙黄蓝\n"
+                     << "\t红橙色块朝向编号： 0) 前后 1) 左右 2) 上下\n" << endl;
                 break;
 
             default:
@@ -210,7 +244,7 @@ public:
         vector<string> corner_block_prompt{"下前右", "下右后", "下左前", "上前右", "上右后", "上后左", "上左前"};
         vector<bool> input_check_flag(7, false);
         for (int i = 0; i < 7; ++i) {
-            cout << setw(2) << i + 1 << ". " << corner_block_prompt[i] << "：角块？朝向？" << endl;
+            checkout_false(cout << setw(2) << i + 1 << ". " << corner_block_prompt[i] << "：角块(", input_check_flag) << ")？朝向？" << endl;
             cin >> arr_state[depth][i][0] >> arr_state[depth][i][1];
             if (arr_state[depth][i][0] < 0 || arr_state[depth][i][0] > 6 || arr_state[depth][i][1] < 0 || arr_state[depth][i][1] > 2) {
                 cout << "无效输入!" << endl;
@@ -262,7 +296,7 @@ public:
             cout << "\n";
             if (row >= max_path_num) {
                 if (row < all_path.size()) {
-                    cout << "    .\n" << setw(4) << all_path.size() << ".\n";
+                    cout << setw(4) << all_path.size() << ".\n";
                 }
                 break;
             }
@@ -271,11 +305,28 @@ public:
     }
 
     void print_state(int depth) {
+        array<string, 7> color{
+                "红白蓝",
+                "红白绿",
+                "橙白蓝",
+                "红黄蓝",
+                "红黄绿",
+                "橙黄绿",
+                "橙黄蓝",
+        };
+        array<string, 3> direction{
+                "前后",
+                "左右",
+                "上下",
+        };
         for (array<int, 2> &a_corner: arr_state[depth]) {
             for (int &a_num: a_corner) {
                 cout << a_num << " ";
             }
             cout << "\n";
+        }
+        for (array<int, 2> &a_corner: arr_state[depth]) {
+            cout << color[a_corner[0]] << " " << direction[a_corner[1]] << "\n";
         }
         cout << endl;
     }
@@ -293,6 +344,7 @@ public:
 
 private:
 
+    int map_depth;
     array<array<int, 2>, 7> zero_state{};
     arr_16_7_2 arr_state{};
     map<int, vector<int>> state_to_path;
@@ -301,9 +353,8 @@ private:
     bool exact_match = true;
     steady_clock::time_point start_;
 
-    void generate_map(int goal_depth = 14) {
-        state_to_path.clear();
-        auto f_lambda = [](int x) {
+    void generate_map_sub_f1(const int &path_index, const int &path_depth) {
+        static auto f_lambda = [](int x) {
             switch (x) {
                 case 1:
                     return 2;
@@ -321,209 +372,106 @@ private:
                     return 0;
             }
         };
-        vector<int> path_ = vector<int>(14, 0);
-        vector<int> transform_path = vector<int>(5, 0);
-        for (int depth_ = 13, length = 1; depth_ >= 9; --depth_, ++length)    //限制最深5层！
-        {
-            for (path_[13] = 1; path_[13] < 7; ++path_[13])//13
-            {
-                arr_state[13] = arr_state[goal_depth];
-                rotate(path_[13], 13);
-                if (depth_ == 13) {
-                    transform(path_.cbegin() + depth_, path_.cend(), transform_path.begin(), f_lambda);
-                    state_to_path.insert({hash(13), vector<int>(transform_path.cbegin(), transform_path.cbegin() + length)});
-                }
-                for (path_[12] = 1; depth_ < 13 && path_[12] < 7; ++path_[12])//12
-                {
-                    if (skip(path_.begin() + 12, path_.end(), false)) continue;
-                    arr_state[12] = arr_state[13];
-                    rotate(path_[12], 12);
-                    if (depth_ == 12) {
-                        transform(path_.cbegin() + depth_, path_.cend(), transform_path.begin(), f_lambda);
-                        state_to_path.insert({hash(12), vector<int>(transform_path.cbegin(), transform_path.cbegin() + length)});
-                    }
-                    for (path_[11] = 1; depth_ < 12 && path_[11] < 7; ++path_[11])//11
-                    {
-                        if (skip(path_.begin() + 11, path_.end(), false)) continue;
-                        arr_state[11] = arr_state[12];
-                        rotate(path_[11], 11);
-                        if (depth_ == 11) {
-                            transform(path_.cbegin() + depth_, path_.cend(), transform_path.begin(), f_lambda);
-                            state_to_path.insert({hash(11), vector<int>(transform_path.cbegin(), transform_path.cbegin() + length)});
-                        }
-                        for (path_[10] = 1; depth_ < 11 && path_[10] < 7; ++path_[10])//10
-                        {
-                            if (skip(path_.begin() + 10, path_.end(), false)) continue;
-                            arr_state[10] = arr_state[11];
-                            rotate(path_[10], 10);
-                            if (depth_ == 10) {
-                                transform(path_.cbegin() + depth_, path_.cend(), transform_path.begin(), f_lambda);
-                                state_to_path.insert({hash(10), vector<int>(transform_path.cbegin(), transform_path.cbegin() + length)});
-                            }
-                            for (path_[9] = 1; depth_ < 10 && path_[9] < 7; ++path_[9])//9
-                            {
-                                if (skip(path_.begin() + 9, path_.end(), false)) continue;
-                                arr_state[9] = arr_state[10];
-                                rotate(path_[9], 9);
-                                if (depth_ == 9) {
-                                    transform(path_.cbegin() + depth_, path_.cend(), transform_path.begin(), f_lambda);
-                                    state_to_path.insert({hash(9), vector<int>(transform_path.cbegin(), transform_path.cbegin() + length)});
-                                }
-                            }
-                        }
-                    }
-                }
+        static vector<int> path_ = vector<int>(14, 0);
+        static vector<int> transform_path = vector<int>(14, 0);
+        for (path_[13 - path_index] = 1; path_[13 - path_index] < 7; ++path_[13 - path_index]) {
+            if (skip(path_.end() - path_index - 1, path_.end(), false)) continue;
+            arr_state[14 - path_index] = arr_state[15 - path_index];
+            rotate(path_[13 - path_index], 14 - path_index);
+            if (path_index + 1 == path_depth) {
+                transform(path_.cend() - path_depth, path_.cend(), transform_path.begin(), f_lambda);
+                state_to_path.insert({hash(14 - path_index), vector<int>(transform_path.cbegin(), transform_path.cbegin() + path_depth)});
+            }
+            if (path_index + 1 < path_depth) {
+                generate_map_sub_f1(path_index + 1, path_depth);
             }
         }
+        if (path_index == 0 && path_depth < map_depth) {
+            generate_map_sub_f1(0, path_depth + 1);
+        }
+    }
+
+    void generate_map() {
+        state_to_path.clear();
+        start();
+        generate_map_sub_f1(0, 1);
+        double second_time = getSecond();
+        cout << __FUNCTION__ << "() 耗时 " << second_time << " 秒" << endl;
         cout << "state_to_path.size(): " << state_to_path.size() << endl;
     }
 
-    int search_all_path(int goal_depth = 14) {
+    void search_all_path_sub_f1(const int &path_index, const int &path_depth, const int &hash_goal) {
+        static vector<int> path_ = vector<int>(14, 0);
+        static int len_map_path = 0;
+        for (path_[path_index] = 1; path_[path_index] < 7; ++path_[path_index]) {
+            if (skip(path_.begin(), path_.begin() + path_index + 1)) continue;
+            arr_state[path_index + 1] = arr_state[path_index];
+            rotate(path_[path_index], path_index + 1);
+            if (path_index + 1 == path_depth && hash_goal == hash(path_depth)) {
+                all_path.emplace_back(path_.cbegin(), path_.cbegin() + path_depth);
+            }
+            if (path_depth <= 14 - map_depth) {
+                if (path_index + 1 < path_depth) {
+                    search_all_path_sub_f1(path_index + 1, path_depth, hash_goal);
+                }
+            } else if (path_index + 2 < path_depth) {
+                search_all_path_sub_f1(path_index + 1, path_depth, hash_goal);
+            } else {
+                len_map_path = look_up_table(path_);
+                if (len_map_path > 0) {
+                    all_path.emplace_back(path_.cbegin(), path_.cbegin() + 14 - map_depth + len_map_path);
+                }
+            }
+        }
+        if (path_index == 0 && all_path.empty() && path_depth <= 14 - map_depth) {
+            search_all_path_sub_f1(0, path_depth + 1, hash_goal);
+        }
+    }
+
+    int search_all_path() {
         all_path.clear();
 
-        int hash_goal = hash(goal_depth);
+        int hash_goal = hash(15);
         if (hash_goal == hash(0)) {
             return 0;
         }
 
-        vector<int> path_ = vector<int>(14, 0);
-        bool go_deep = true;
-        int depth_ = 1, len_reverse = 0;
         start();
-        for (; go_deep && depth_ <= 10; ++depth_)    //限制最深9层！
-        {
-            for (path_[0] = 1; path_[0] < 7; ++path_[0])//1
-            {
-                arr_state[1] = arr_state[0];
-                rotate(path_[0], 1);
-                if (depth_ == 1 && hash_goal == hash(1)) {
-                    all_path.emplace_back(path_.cbegin(), path_.cbegin() + depth_);
-                    go_deep = false;
-                }
-                for (path_[1] = 1; depth_ > 1 && path_[1] < 7; ++path_[1])//2
-                {
-                    if (skip(path_.begin(), path_.begin() + 2)) continue;
-                    arr_state[2] = arr_state[1];
-                    rotate(path_[1], 2);
-                    if (depth_ == 2 && hash_goal == hash(2)) {
-                        all_path.emplace_back(path_.cbegin(), path_.cbegin() + depth_);
-                        go_deep = false;
-                    }
-                    for (path_[2] = 1; depth_ > 2 && path_[2] < 7; ++path_[2])//3
-                    {
-                        if (skip(path_.begin(), path_.begin() + 3)) continue;
-                        arr_state[3] = arr_state[2];
-                        rotate(path_[2], 3);
-                        if (depth_ == 3 && hash_goal == hash(3)) {
-                            all_path.emplace_back(path_.cbegin(), path_.cbegin() + depth_);
-                            go_deep = false;
-                        }
-                        for (path_[3] = 1; depth_ > 3 && path_[3] < 7; ++path_[3])//4
-                        {
-                            if (skip(path_.begin(), path_.begin() + 4)) continue;
-                            arr_state[4] = arr_state[3];
-                            rotate(path_[3], 4);
-                            if (depth_ == 4 && hash_goal == hash(4)) {
-                                all_path.emplace_back(path_.cbegin(), path_.cbegin() + depth_);
-                                go_deep = false;
-                            }
-                            for (path_[4] = 1; depth_ > 4 && path_[4] < 7; ++path_[4])//5
-                            {
-                                if (skip(path_.begin(), path_.begin() + 5)) continue;
-                                arr_state[5] = arr_state[4];
-                                rotate(path_[4], 5);
-                                if (depth_ == 5 && hash_goal == hash(5)) {
-                                    all_path.emplace_back(path_.cbegin(), path_.cbegin() + depth_);
-                                    go_deep = false;
-                                }
-                                for (path_[5] = 1; depth_ > 5 && path_[5] < 7; ++path_[5])//6
-                                {
-                                    if (skip(path_.begin(), path_.begin() + 6)) continue;
-                                    arr_state[6] = arr_state[5];
-                                    rotate(path_[5], 6);
-                                    if (depth_ == 6 && hash_goal == hash(6)) {
-                                        all_path.emplace_back(path_.cbegin(), path_.cbegin() + depth_);
-                                        go_deep = false;
-                                    }
-                                    for (path_[6] = 1; depth_ > 6 && path_[6] < 7; ++path_[6])//7
-                                    {
-                                        if (skip(path_.begin(), path_.begin() + 7)) continue;
-                                        arr_state[7] = arr_state[6];
-                                        rotate(path_[6], 7);
-                                        if (depth_ == 7 && hash_goal == hash(7)) {
-                                            all_path.emplace_back(path_.cbegin(), path_.cbegin() + depth_);
-                                            go_deep = false;
-                                        }
-                                        for (path_[7] = 1; depth_ > 7 && path_[7] < 7; ++path_[7])//8
-                                        {
-                                            if (skip(path_.begin(), path_.begin() + 8)) continue;
-                                            arr_state[8] = arr_state[7];
-                                            rotate(path_[7], 8);
-                                            if (depth_ == 8 && hash_goal == hash(8)) {
-                                                all_path.emplace_back(path_.cbegin(), path_.cbegin() + depth_);
-                                                go_deep = false;
-                                            }
-                                            for (path_[8] = 1; depth_ > 8 && path_[8] < 7; ++path_[8])//9
-                                            {
-                                                if (skip(path_.begin(), path_.begin() + 9)) continue;
-                                                arr_state[9] = arr_state[8];
-                                                rotate(path_[8], 9);
-                                                if (depth_ == 9 && hash_goal == hash(9)) {
-                                                    all_path.emplace_back(path_.cbegin(), path_.cbegin() + depth_);
-                                                    go_deep = false;
-                                                }
-                                                if (depth_ > 9) {
-                                                    len_reverse = look_up_table(path_);
-                                                    if (len_reverse > 0) {
-                                                        all_path.emplace_back(path_.cbegin(), path_.cbegin() + 9 + len_reverse);
-                                                        go_deep = false;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        search_all_path_sub_f1(0, 1, hash_goal);
         double second_time = getSecond();
-        cout << "耗时 " << second_time << " 秒" << endl;
+        cout << __FUNCTION__ << "() 耗时 " << second_time << " 秒" << endl;
 
-        if (go_deep) {
+        if (all_path.empty()) {
             return -1;
         } else {
-            if (depth_ > 9) {
-                depth_ = 14;
+            int path_depth = (int) all_path[0].size();
+            if (path_depth > 14 - map_depth) {
+                path_depth = 14;
                 for (vector<int> &a_path: all_path) {
-                    if (a_path.size() < depth_) {
-                        depth_ = (int) a_path.size();
+                    if (a_path.size() < path_depth) {
+                        path_depth = (int) a_path.size();
                     }
                 }
                 auto end_remove = remove_if(all_path.begin(), all_path.end(),
-                                            [depth_](vector<int> &a_path) { return a_path.size() > depth_; });
+                                            [path_depth](vector<int> &a_path) { return a_path.size() > path_depth; });
                 all_path.erase(end_remove, all_path.end());
-                return depth_;
-            } else {
-                return --depth_;
             }
+            return path_depth;
         }
     }
 
     int look_up_table(vector<int> &path_) {
-        int hash_depth_9 = hash(9);
-        if (state_to_path.find(hash_depth_9) == state_to_path.end()) {
+        int hash_connect = hash(14 - map_depth);
+        if (state_to_path.find(hash_connect) == state_to_path.end()) {
             return 0;
         } else {
-            vector<int> path = state_to_path.at(hash_depth_9);
-            std::copy(path.cbegin(), path.cend(), path_.begin() + 9);
+            vector<int> path = state_to_path.at(hash_connect);
+            std::copy(path.cbegin(), path.cend(), path_.begin() + 14 - map_depth);
             return (int) path.size();
         }
     }
 
-    void youshun(int n) {
+    void right_clockwise(int n) {
         int i = arr_state[n][0][0];
         arr_state[n][0][0] = arr_state[n][1][0];
         arr_state[n][1][0] = arr_state[n][4][0];
@@ -536,7 +484,7 @@ private:
         arr_state[n][3][1] = 2 - i;
     }
 
-    void youni(int n) {
+    void right_counterclockwise(int n) {
         int i = arr_state[n][0][0];
         arr_state[n][0][0] = arr_state[n][3][0];
         arr_state[n][3][0] = arr_state[n][4][0];
@@ -549,7 +497,7 @@ private:
         arr_state[n][1][1] = 2 - i;
     }
 
-    void shangshun(int n) {
+    void up_clockwise(int n) {
         int i = arr_state[n][3][0];
         arr_state[n][3][0] = arr_state[n][4][0];
         arr_state[n][4][0] = arr_state[n][5][0];
@@ -578,7 +526,7 @@ private:
         }
     }
 
-    void shangni(int n) {
+    void up_counterclockwise(int n) {
         int i = arr_state[n][3][0];
         arr_state[n][3][0] = arr_state[n][6][0];
         arr_state[n][6][0] = arr_state[n][5][0];
@@ -607,7 +555,7 @@ private:
         }
     }
 
-    void qianshun(int n) {
+    void front_clockwise(int n) {
         int i = arr_state[n][0][0];
         arr_state[n][0][0] = arr_state[n][3][0];
         arr_state[n][3][0] = arr_state[n][6][0];
@@ -636,7 +584,7 @@ private:
         }
     }
 
-    void qiani(int n) {
+    void front_counterclockwise(int n) {
         int i = arr_state[n][0][0];
         arr_state[n][0][0] = arr_state[n][2][0];
         arr_state[n][2][0] = arr_state[n][6][0];
@@ -668,22 +616,22 @@ private:
     void rotate(int direction, int depth) {
         switch (direction) {
             case 1:
-                youshun(depth);
+                right_clockwise(depth);
                 break;
             case 2:
-                youni(depth);
+                right_counterclockwise(depth);
                 break;
             case 3:
-                shangshun(depth);
+                up_clockwise(depth);
                 break;
             case 4:
-                shangni(depth);
+                up_counterclockwise(depth);
                 break;
             case 5:
-                qianshun(depth);
+                front_clockwise(depth);
                 break;
             case 6:
-                qiani(depth);
+                front_counterclockwise(depth);
                 break;
 
             default:
@@ -711,6 +659,7 @@ private:
         return false;
     }
 
+    inline
     int hash(int depth) {
         if (exact_match) { // 上界600362847*3-1=1801088540 < std::numeric_limits<int>::max()=2147483647
             return arr_state[depth][0][0] + arr_state[depth][0][1] * 7 +
